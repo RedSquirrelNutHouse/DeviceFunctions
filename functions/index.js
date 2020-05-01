@@ -23,7 +23,16 @@ const DeviceSettings = {
   title: "Vice President of JavaScript"
 };
 
-// Used to hold all of the responce Data
+// 
+/**
+ * responceMessage Used to hold all of the responce Data
+ * @param {!express:Request} responceMessage HTTP request context.
+ * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
+ * @param responceMessage.status - This is status True = Error False = No Error.
+ * @param responceMessage.code - This is code assigned to the Error.
+ * @param responceMessage.description - This is description of the Error.
+ */
 var responceMessage = {
 data : null,
 error : {
@@ -56,8 +65,18 @@ exports.sendCommand = functions.https.onRequest((request, response) => {
 /**
  * sendConfig allows a user to send data to the selected device
  * @param {!express:Request} request HTTP request context.
- * @param request
+ * @param request.projectId - This is teh project ID gotten from the home page of the project.
+ * @param request.cloudRegion - This is the region the project device is in gotten from the device reg.
+ * @param request.registryId - This is the device reg id.
+ * @param request.deviceId - This is the device id found in the required Reg.
+ * @param request.deviceConfig - This is the deviceconfig and is generally a JSON object.
  * @param {!express:Response} response HTTP response context.
+ * @param response.responceMessage - This is the deviceconfig and is generally a JSON object.
+ * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
+ * @param responceMessage.status - This is status True = Error False = No Error.
+ * @param responceMessage.code - This is code assigned to the Error.
+ * @param responceMessage.description - This is description of the Error.
  */
 exports.sendConfig = functions.https.onRequest((request, response) => {
 
@@ -97,7 +116,6 @@ exports.sendConfig = functions.https.onRequest((request, response) => {
         // 409  Indicates that the request could not be processed because of conflict in the current state of the resource, such as an edit conflict between multiple simultaneous updates.
         response.status(409).send(responceMessage);
     });
-
 });
 });
 
