@@ -23,6 +23,20 @@ const DeviceSettings = {
   title: "Vice President of JavaScript"
 };
 
+// Added to debug functions in Stackdriver Debug.
+const debug = require('@google-cloud/debug-agent').start({
+    allowExpressions: true,
+    serviceContext: {
+        service: 'deviceFunctions',
+        version: 'V1.0.0'
+    }
+});
+// Lets the user know its ready to debug,
+debug.isReady().then(() => {
+    debugInitialized = true
+    console.log("Debugger is initialize")
+});
+
 // 
 /**
  * responceMessage Used to hold all of the responce Data
