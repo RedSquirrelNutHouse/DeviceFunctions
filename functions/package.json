@@ -15,7 +15,7 @@
     "firebase-admin": "^8.10.0",
     "firebase-functions": "^3.6.1",
     "googleapis": "^49.0.0",
-    "@google-cloud/debug-agent": "3.0.1"
+    "@google-cloud/debug-agent": "^4.2.2"
   },
   "devDependencies": {
     "firebase-functions-test": "^0.2.0"

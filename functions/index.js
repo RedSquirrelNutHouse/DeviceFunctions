@@ -11,6 +11,22 @@
  * All of the needed functions for device managment.
  * Base project will use the LOLIN Board to test.
  */
+
+// Added to debug functions in Stackdriver Debug.
+const debug = require('@google-cloud/debug-agent').start({
+    allowExpressions: true,
+    serviceContext: {
+        service: 'DEVICEFUNCTIONS',
+        version: 'V1.0.0'
+    }
+});
+
+// Lets the user know its ready to debug,
+debug.isReady().then(() => {
+    debugInitialized = true
+    console.log("Debugger is initialize")
+});
+
 const functions = require('firebase-functions');
 'use strict';
 const {google} = require('googleapis');
@@ -23,19 +39,7 @@ const DeviceSettings = {
   title: "Vice President of JavaScript"
 };
 
-// Added to debug functions in Stackdriver Debug.
-const debug = require('@google-cloud/debug-agent').start({
-    allowExpressions: true,
-    serviceContext: {
-        service: 'deviceFunctions',
-        version: 'V1.0.0'
-    }
-});
-// Lets the user know its ready to debug,
-debug.isReady().then(() => {
-    debugInitialized = true
-    console.log("Debugger is initialize")
-});
+
 
 // 
 /**
