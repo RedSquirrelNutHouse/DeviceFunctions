@@ -52,6 +52,13 @@ exports.sendCommand = functions.https.onRequest((request, response) => {
     response.send("Hello from Firebase!");
 });
 
+
+/**
+ * sendConfig allows a user to send data to the selected device
+ * @param {!express:Request} request HTTP request context.
+ * @param request
+ * @param {!express:Response} response HTTP response context.
+ */
 exports.sendConfig = functions.https.onRequest((request, response) => {
 
     // Take the data from the request.
