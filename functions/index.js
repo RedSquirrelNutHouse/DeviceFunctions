@@ -1,3 +1,4 @@
+
 /**
  * 
  *____          _   ____              _               _ 
@@ -7,123 +8,96 @@
  |_| \_\___|\__,_| |____/ \__, |\__,_|_|_|  |_|  \___|_|
                              |_|
  * Owners : RCarroll & CForristal Copyright 2020.                          
- * Covers all of the device interactions see the device interaction doc for more details.
+ * All of the needed functions for device managment.
+ * Base project will use the LOLIN Board to test.
  */
-
-// Used to allow the use of the debug agent.
-const debug = require('@google-cloud/debug-agent').start({
-    allowExpressions:true,
-    serviceContext:{
-        service: 'redSquirrel',
-        version: '1.0.0'
-    }
-});
-'use strict';
-// Use Firebase functions.
 const functions = require('firebase-functions');
-// Use fs the file System
-const fs = require('fs');
-// START iot_get_client
+'use strict';
 const {google} = require('googleapis');
-const iot = require('@google-cloud/iot');
-
-// The debug and if ready.
-debug.isReady().then(() => {
-    debugInitialized = true
-    console.log("Debugger is initialize")
-});
 
 
+
+const DeviceSettings = {
+  name: "John Doe",
+  age: 32,
+  title: "Vice President of JavaScript"
+};
+
+// Used to hold all of the responce Data
+var responceMessage = {
+data : null,
+error : {
+    status : false,
+    code : 0,
+    description: ""
+}
+}
 
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-exports.addNumbers = functions.https.onRequest((request, response) => {
-    var a = 10;
-    var b = 20;
-    var c = a + b;
+
+exports.addDevice = functions.https.onRequest((request, response) => {
  response.send("Hello from Firebase!");
 });
 
-//################################## Device Update, Create, Delete and Reading ###########################################
-/** 
-* @param {!express:Request} req HTTP request context.
-* @param {!express:Response} res HTTP response context.
-*/
-const API_VERSION = 'v1';
-const DISCOVERY_API = 'https://cloudiot.googleapis.com/$discovery/rest';
+exports.deleteDevice = functions.https.onRequest((request, response) => {
+    response.send("Hello from Firebase!");
+});
 
-// Start the iot core.
-const client = new iot.v1.DeviceManagerClient();
-// [END iot_get_client]
+exports.listDevices = functions.https.onRequest((request, response) => {
+    response.send("Hello from Firebase!");
+});
 
-if (client === undefined) {
-  console.log('Did not instantiate client.');
-}
+exports.sendCommand = functions.https.onRequest((request, response) => {
+    response.send("Hello from Firebase!");
+});
 
-/** 
- * setIOTState - This allows the user to list the last states of the selected device
- * @param {!express:Request} req HTTP request context.
- * @param projectId - The id of the project.
- * @param deviceId - The Deviceid of the project.
- * @param registryId - The reg id of the project.
- * @param cloudRegion - The cloudRegion of the project.
- * @param registryId - The registryId of the project.
- * @param {!express:Response} res HTTP response context.
-*/
-exports.setIOTState = functions.https.onCall((data, context) => {
+exports.sendConfig = functions.https.onRequest((request, response) => {
 
-    // Obtain the device data from the request.
-    const projectId = data.projectId;
-    const deviceId = data.deviceId;
-    const registryId = data.registryId;
-    const cloudRegion = data.cloudRegion;
-    // iot Client create
-    const getDeviceState = async (
-        client,
-        deviceId,
-        registryId,
-        projectId,
-        cloudRegion
-      ) => {
-        // [START iot_get_device_state]
-        // const cloudRegion = 'us-central1';
-        // const deviceId = 'my-device';
-        // const projectId = 'adjective-noun-123';
-        // const registryId = 'my-registry';
-        const iot = require('@google-cloud/iot');
-        const iotClient = new iot.v1.DeviceManagerClient({
-          // optional auth parameters.
-        });
-        const devicePath = iotClient.devicePath(
-          projectId,
-          cloudRegion,
-          registryId,
-          deviceId
-        );
-        console.log(devicePath);
-        try {
-          const responses = await iotClient.listDeviceStates({name: devicePath});
-          const states = responses[0].deviceStates;
-          if (states.length === 0) {
-            console.log(`No States for device: ${deviceId}`);
-          } else {
-            console.log(`States for device: ${deviceId}`);
-          }
-      
-          for (let i = 0; i < states.length; i++) {
-            const state = states[i];
-            console.log(
-              'State:',
-              state,
-              '\nData:\n',
-              state.binaryData.toString('utf8')
-            );
-          }
-        } catch (err) {
-          console.error('Could not find device:', deviceId);
-          console.error('trace:', err);
-        }
-        // [END iot_get_device_state]
+    // Take the data from the request.
+    const projectId = request.projectId;
+    const cloudRegion = request.cloudRegion;
+    const registryId = request.registryId;
+    const deviceId = request.deviceId;
+    const deviceConfig = request.deviceConfig;
+
+    google.auth.getClient().then(client => {
+    google.options({
+        auth: client
+    });
+
+    // Create the Nessary project links 
+    const parentName = `projects/${projectId}/locations/${cloudRegion}`;
+    const registryName = `${parentName}/registries/${registryId}`;
+    // Turn the String JSON to base64
+    const binaryData = Buffer.from(JSON.stringify(deviceConfig)).toString('base64');
+    // Create the request
+    const request = {
+        name: `${registryName}/devices/${deviceId}`,
+        versionToUpdate: 0,
+        binaryData: binaryData
     };
+
+    google.cloudiot('v1').projects.locations.registries.devices.modifyCloudToDeviceConfig(request).then(result => {
+        console.log(result);
+        responceMessage.data = "Done";
+        response.status(200).send(responceMessage);
+    }).catch(error => {
+        responceMessage.data = error;
+        responceMessage.error.status = true;
+        responceMessage.error.code = 1;
+        responceMessage.error.description = `Failed to send the config to the device ${deviceId}` ;
+        // 409  Indicates that the request could not be processed because of conflict in the current state of the resource, such as an edit conflict between multiple simultaneous updates.
+        response.status(409).send(responceMessage);
+    });
+
+});
+});
+
+exports.getState = functions.https.onRequest((request, response) => {
+    response.send("Hello from Firebase!");
+});
+
+exports.getConfig = functions.https.onRequest((request, response) => {
+    response.send("Hello from Firebase!");
 });
