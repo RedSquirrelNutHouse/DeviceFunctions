@@ -16,8 +16,8 @@
 const debug = require('@google-cloud/debug-agent').start({
     allowExpressions: true,
     serviceContext: {
-        service: 'device-functions',
-        version: 'V1.1.0'
+        service: 'functions',
+        version: 'V1.2.0'
     }
 });
 
