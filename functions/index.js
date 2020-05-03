@@ -61,6 +61,17 @@ error : {
 }
 }
 
+function resetMessage()
+{
+    responceMessage = {
+        data : null,
+        error : {
+            status : false,
+            code : 0,
+            description: ""
+        }
+    }
+}
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 
@@ -102,6 +113,7 @@ exports.sendCommand = functions.https.onCall((data, context) => {
  */
 exports.sendCommand = functions.https.onCall((data, context) => {
     
+    resetMessage();
     // Take the data from the request.
     const projectId = data.projectId;
     const cloudRegion = data.cloudRegion;
@@ -163,6 +175,7 @@ exports.sendCommand = functions.https.onCall((data, context) => {
  */
 exports.sendConfig = functions.https.onCall((data, context) => {
     
+    resetMessage();
     // Take the data from the request.
     const projectId = data.projectId;
     const cloudRegion = data.cloudRegion;
@@ -223,6 +236,7 @@ exports.sendConfig = functions.https.onCall((data, context) => {
  */
 exports.getConfig = functions.https.onCall((data, context) => {
     
+    resetMessage();
     // Take the data from the request.
     const projectId = data.projectId;
     const cloudRegion = data.cloudRegion;

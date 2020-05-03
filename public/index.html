@@ -66,23 +66,7 @@
 
       const functions = firebase.functions();
 
-      // Test Sending a Command
-      function sendCommand(name)
-      {
-        const addAdminRole = functions.httpsCallable('sendCommand');
 
-        addAdminRole({  name: name })
-        .then(result => {
-
-          console.log("Done");
-          console.log(result);
-              
-          }).catch((error) =>{
-            
-            console.log(error);
-        });
-
-      }
 
       // Test Sending a Config
       // Test - sendConfig('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEW')
