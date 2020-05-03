@@ -23,13 +23,15 @@ const debug = require('@google-cloud/debug-agent').start({
 
 // Lets the user know its ready to debug,
 debug.isReady().then(() => {
-    debugInitialized = true
-    console.log("Debugger is initialize")
+    debugInitialized = true;  
+    console.log("Debugger is initialize");
 });
 
 const functions = require('firebase-functions');
 'use strict';
 const {google} = require('googleapis');
+
+const iot = require('@google-cloud/iot');
 
 
 
@@ -38,7 +40,6 @@ const DeviceSettings = {
   age: 32,
   title: "Vice President of JavaScript"
 };
-
 
 
 // 
@@ -75,72 +76,138 @@ exports.listDevices = functions.https.onRequest((request, response) => {
     response.send("Hello from Firebase!");
 });
 
-exports.sendCommand = functions.https.onRequest((request, response) => {
-    response.send("Hello from Firebase!");
+exports.sendCommand = functions.https.onCall((data, context) => {
+    console.log(data.name);
+    return {
+        message: `FAILED! Email sent to the user at email address` + data.to,
+        status: false
+      }
 });
 
 
 /**
  * sendConfig allows a user to send data to the selected device
- * @param {!express:Request} request HTTP request context.
- * @param request.projectId - This is teh project ID gotten from the home page of the project.
- * @param request.cloudRegion - This is the region the project device is in gotten from the device reg.
- * @param request.registryId - This is the device reg id.
- * @param request.deviceId - This is the device id found in the required Reg.
- * @param request.deviceConfig - This is the deviceconfig and is generally a JSON object.
- * @param {!express:Response} response HTTP response context.
- * @param response.responceMessage - This is the deviceconfig and is generally a JSON object.
+ * @param {!express:Request} data on Call data.
+ * @param data.projectId - This is teh project ID gotten from the home page of the project.
+ * @param data.cloudRegion - This is the region the project device is in gotten from the device reg.
+ * @param data.registryId - This is the device reg id.
+ * @param data.deviceId - This is the device id found in the required Reg.
+ * @param data.deviceConfig - This is the deviceconfig and is generally a JSON object.
+ * @param {!express:Response} return HTTP response context.
+ * @param return.responceMessage - This is the deviceconfig and is generally a JSON object.
  * @param responceMessage.data - This is the json object for the data will change per function.
  * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
  * @param responceMessage.status - This is status True = Error False = No Error.
  * @param responceMessage.code - This is code assigned to the Error.
  * @param responceMessage.description - This is description of the Error.
  */
-exports.sendConfig = functions.https.onRequest((request, response) => {
-
+exports.sendConfig = functions.https.onCall((data, context) => {
+    
     // Take the data from the request.
-    const projectId = request.projectId;
-    const cloudRegion = request.cloudRegion;
-    const registryId = request.registryId;
-    const deviceId = request.deviceId;
-    const deviceConfig = request.deviceConfig;
+    const projectId = data.projectId;
+    const cloudRegion = data.cloudRegion;
+    const registryId = data.registryId;
+    const deviceId = data.deviceId;
+    const deviceConfig = data.deviceConfig;
 
-    google.auth.getClient().then(client => {
-    google.options({
-        auth: client
+    return google.auth.getClient().then(client => {
+            google.options({
+                auth: client
+            });
+
+            // Create the Nessary project links 
+            const parentName = `projects/${projectId}/locations/${cloudRegion}`;
+            const registryName = `${parentName}/registries/${registryId}`;
+            // Turn the String JSON to base64
+            const binaryData = Buffer.from(JSON.stringify(deviceConfig)).toString('base64');
+            // Create the request
+            const request = {
+                name: `${registryName}/devices/${deviceId}`,
+                versionToUpdate: 0,
+                binaryData: binaryData
+            };
+
+            return google.cloudiot('v1').projects.locations.registries.devices.modifyCloudToDeviceConfig(request).then(result => {
+                console.log(result);
+                responceMessage.data = "Done";
+                return responceMessage;
+            }).catch(error => {
+                responceMessage.data = error;
+                responceMessage.error.status = true;
+                responceMessage.error.code = 1;
+                responceMessage.error.description = `Failed to send the config to the device ${deviceId}` ;
+                // 403  Device Error or NO device
+                return responceMessage;
+        });
     });
-
-    // Create the Nessary project links 
-    const parentName = `projects/${projectId}/locations/${cloudRegion}`;
-    const registryName = `${parentName}/registries/${registryId}`;
-    // Turn the String JSON to base64
-    const binaryData = Buffer.from(JSON.stringify(deviceConfig)).toString('base64');
-    // Create the request
-    const request = {
-        name: `${registryName}/devices/${deviceId}`,
-        versionToUpdate: 0,
-        binaryData: binaryData
-    };
-
-    google.cloudiot('v1').projects.locations.registries.devices.modifyCloudToDeviceConfig(request).then(result => {
-        console.log(result);
-        responceMessage.data = "Done";
-        response.status(200).send(responceMessage);
-    }).catch(error => {
-        responceMessage.data = error;
-        responceMessage.error.status = true;
-        responceMessage.error.code = 1;
-        responceMessage.error.description = `Failed to send the config to the device ${deviceId}` ;
-        // 409  Indicates that the request could not be processed because of conflict in the current state of the resource, such as an edit conflict between multiple simultaneous updates.
-        response.status(409).send(responceMessage);
-    });
-});
 });
 
 exports.getState = functions.https.onRequest((request, response) => {
     response.send("Hello from Firebase!");
 });
 
-exports.getConfig = functions.https.onRequest((request, response) => {
-    response.send("Hello from Firebase!");
+
+/**
+ * getConfig allows a user to get the data that was last sent to the selected device
+ * @param {!express:Request} data on Call data.
+ * @param data.projectId - This is teh project ID gotten from the home page of the project.
+ * @param data.cloudRegion - This is the region the project device is in gotten from the device reg.
+ * @param data.registryId - This is the device reg id.
+ * @param data.deviceId - This is the device id found in the required Reg.
+ * @param data.deviceConfig - This is the deviceconfig and is generally a JSON object.
+ * @param {!express:Response} return HTTP response context.
+ * @param return.responceMessage - This is the deviceconfig and is generally a JSON object.
+ * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
+ * @param responceMessage.status - This is status True = Error False = No Error.
+ * @param responceMessage.code - This is code assigned to the Error.
+ * @param responceMessage.description - This is description of the Error.
+ */
+exports.getConfig = functions.https.onCall((data, context) => {
+    
+    // Take the data from the request.
+    const projectId = data.projectId;
+    const cloudRegion = data.cloudRegion;
+    const registryId = data.registryId;
+    const deviceId = data.deviceId;
+    const iotClient = new iot.v1.DeviceManagerClient({
+        // optional auth parameters.
+      });
+    const devicePath = iotClient.devicePath(
+    projectId,
+    cloudRegion,
+    registryId,
+    deviceId
+    );
+    try {
+        return iotClient.listDeviceConfigVersions({
+            name: devicePath,
+        }).then(result => {
+        const configs = responses[0].deviceConfigs;
+
+        if (configs.length === 0) {
+            console.log(`No configs for device: ${deviceId}`);
+        } else {
+            console.log(`Configs:`);
+        }
+
+        for (let i = 0; i < configs.length; i++) {
+            const config = configs[i];
+            console.log(
+            'Config:',
+            config,
+            '\nData:\n',
+            config.binaryData.toString('utf8')
+            );
+        }
+        }).catch(error => {
+            responceMessage.data = error;
+            responceMessage.error.status = true;
+            responceMessage.error.code = 1;
+            responceMessage.error.description = `Failed to send the config to the device ${deviceId}` ;
+            // 403  Device Error or NO device
+            return responceMessage;
+        });
+    }
+    
 });
