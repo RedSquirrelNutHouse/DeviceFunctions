@@ -96,8 +96,10 @@ exports.addDevice = functions.https.onCall((data, context) => {
     // optional auth parameters.
     });
     var keytoUse = backslash(publicKeyFile);
+    console.log(keytoUse);
     
     const regPath = iotClient.registryPath(projectId, cloudRegion, registryId);
+    // Create the device . 
     const device = {
       id: deviceId,
       credentials: [
@@ -120,7 +122,7 @@ exports.addDevice = functions.https.onCall((data, context) => {
       } ).catch(error => {
         responceMessage.data = error;
         responceMessage.error.status = true;
-        responceMessage.error.code = 3;
+        responceMessage.error.code = 4;
         responceMessage.error.description = `Failed to send a command to the device ${deviceId}` ;
         // 403  Device Error or NO device.
         return responceMessage;
@@ -129,10 +131,64 @@ exports.addDevice = functions.https.onCall((data, context) => {
     // Public key ec_public.pem
 });
 
-exports.deleteDevice = functions.https.onRequest((request, response) => {
-    response.send("Hello from Firebase!");
-});
 
+/**
+ * deleteDevice allows a user to delete a Device.
+ * @param {!express:Request} data on Call data.
+ * @param data.projectId - This is teh project ID gotten from the home page of the project.
+ * @param data.cloudRegion - This is the region the project device is in gotten from the device reg.
+ * @param data.registryId - This is the device reg id.
+ * @param data.deviceId - This is the device id found in the required Reg.
+ * @param data.commandMessage - This is the devicecommand and is generally a JSON object.
+ * @param {!express:Response} return HTTP response context.
+ * @param return.responceMessage - This is the device responce to the command and is generally a JSON object.
+ * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
+ * @param responceMessage.status - This is status True = Error False = No Error.
+ * @param responceMessage.code - This is code assigned to the Error.
+ * @param responceMessage.description - This is description of the Error.
+ */
+exports.deleteDevice = functions.https.onCall((data, context) => {
+    
+    resetMessage();
+    // Take the data from the request.
+    const projectId = data.projectId;
+    const cloudRegion = data.cloudRegion;
+    const registryId = data.registryId;
+    const deviceId = data.deviceId;
+    const iotClient = new iot.v1.DeviceManagerClient({
+    // optional auth parameters.
+    });
+
+    // Get the device path.
+    const devicePath = iotClient.devicePath(
+    projectId,
+    cloudRegion,
+    registryId,
+    deviceId
+    );
+
+  
+    // the Request Object.
+    const request = {
+      name: devicePath
+    };
+  
+    return iotClient.deleteDevice(request).then(responses => {
+    // The responce.
+    const responce = responses[0];
+    responceMessage.data = responce;
+    return responceMessage;
+    }).catch(error => {
+        responceMessage.data = error;
+        responceMessage.error.status = true;
+        responceMessage.error.code = 5;
+        responceMessage.error.description = `Failed to delete the device ${deviceId}` ;
+        // 403  Device Error or NO device.
+        return responceMessage;
+    });
+
+});
 exports.listDevices = functions.https.onRequest((request, response) => {
     response.send("Hello from Firebase!");
 });

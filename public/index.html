@@ -61,23 +61,17 @@
         measurementId: "G-T97YWFVSWX"
       };
       firebase.initializeApp(Firebaseconfig);
-
-
-
       const functions = firebase.functions();
 
-
-
-      // Test Sending a Config
       // Test - sendConfig('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEW')
       function sendConfig(projectId, cloudRegion, registryId, deviceId  )
       {
-        const addAdminRole = functions.httpsCallable('sendConfig');
+        const cf = functions.httpsCallable('sendConfig');
         var deviceConfig = {
           version: 12.1,
           settings: "ON"
         };
-        addAdminRole({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId, deviceId: deviceId, deviceConfig: deviceConfig })
+        cf({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId, deviceId: deviceId, deviceConfig: deviceConfig })
         .then(result => {
 
           console.log("Done !!");
@@ -90,16 +84,16 @@
 
       }
 
-            // Test Sending a Config
+      
       // Test - getConfig('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEW')
       function getConfig(projectId, cloudRegion, registryId, deviceId )
       {
-        const addAdminRole = functions.httpsCallable('getConfig');
+        const cf = functions.httpsCallable('getConfig');
         var deviceConfig = {
           version: 12.1,
           settings: "ON"
         };
-        addAdminRole({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId, deviceId: deviceId })
+        cf({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId, deviceId: deviceId })
         .then(result => {
 
           console.log("Done !!");
@@ -112,7 +106,7 @@
 
       }
 
-                  // Test Sending a Config
+          
       // Test - sendCommand('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEW')
       function sendCommand(projectId, cloudRegion, registryId, deviceId )
       {
@@ -134,11 +128,11 @@
       }
 
       
-      // Test Sending a Config
-      // Test - addDevice('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEW','ec','ec_public.pem')
+      // Test - addDevice('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEW','ES256_PEM')
       function addDevice(projectId, cloudRegion, registryId, deviceId ,publicKeyFormat,publicKeyFile)
       {
-        var privateKey = '-----BEGIN\\sPUBLIC\\sKEY-----\\r\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkiVcex5lBtf0j92hDkqBAWzgfDHY\\r\\nHQD5x5kldGwzgkDBep0OkANRNtHPxjR61zKBsnxA/irFy/SWrfbztQfyuA==\\r\\n-----END\\sPUBLIC\\sKEY-----';
+        // Create a Key Locally No api bar gcloud console to do this !
+        var privateKey = '-----BEGIN PUBLIC KEY-----\\r\\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkiVcex5lBtf0j92hDkqBAWzgfDHY\\r\\nHQD5x5kldGwzgkDBep0OkANRNtHPxjR61zKBsnxA/irFy/SWrfbztQfyuA==\\r\\n-----END PUBLIC KEY-----';
         const cf = functions.httpsCallable('addDevice');
         var commandMessage = {
           command: "Alive"
@@ -146,6 +140,28 @@
         
       
         cf({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId, deviceId: deviceId ,publicKeyFormat: publicKeyFormat, publicKeyFile: privateKey})
+        .then(result => {
+
+          console.log("Done !!");
+          console.log(result.data);
+              
+          }).catch((error) =>{
+            
+            console.log(error);
+        });
+
+      }
+
+      // Test - deleteDevice('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEWA')
+      function deleteDevice(projectId, cloudRegion, registryId, deviceId )
+      {
+        const cf = functions.httpsCallable('deleteDevice');
+        var commandMessage = {
+          command: "Alive"
+        };
+        
+      
+        cf({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId, deviceId: deviceId })
         .then(result => {
 
           console.log("Done !!");
