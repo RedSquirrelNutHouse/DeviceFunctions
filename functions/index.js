@@ -172,42 +172,51 @@ exports.getConfig = functions.https.onCall((data, context) => {
     const deviceId = data.deviceId;
     const iotClient = new iot.v1.DeviceManagerClient({
         // optional auth parameters.
-      });
+    });
     const devicePath = iotClient.devicePath(
     projectId,
     cloudRegion,
     registryId,
     deviceId
     );
-    try {
-        return iotClient.listDeviceConfigVersions({
-            name: devicePath,
-        }).then(result => {
-        const configs = responses[0].deviceConfigs;
 
-        if (configs.length === 0) {
-            console.log(`No configs for device: ${deviceId}`);
-        } else {
-            console.log(`Configs:`);
-        }
-
-        for (let i = 0; i < configs.length; i++) {
-            const config = configs[i];
-            console.log(
-            'Config:',
-            config,
-            '\nData:\n',
-            config.binaryData.toString('utf8')
-            );
-        }
-        }).catch(error => {
-            responceMessage.data = error;
-            responceMessage.error.status = true;
-            responceMessage.error.code = 1;
-            responceMessage.error.description = `Failed to send the config to the device ${deviceId}` ;
-            // 403  Device Error or NO device
-            return responceMessage;
-        });
+    var configData = {
+        currentVersion: null,
+        numberOfVersions: 0,
+        data:[]
     }
+  
+    return iotClient.listDeviceConfigVersions({name: devicePath}).then(responses => {
+    // The Configs is the list of versions sent
+    const configs = responses[0].deviceConfigs;
+    var versionMax = 0;
+    // Cycle through the config data.
+    for (let i = 0; i < configs.length; i++) {
+        configData.numberOfVersions ++;
+        const config = configs[i];
+        // Create the versions.
+        var configVersionData = {
+            version: config,
+            data: config.binaryData.toString('utf8')
+        };
+        configData.data.push(configVersionData);
+        // Here we get the Current VERSION and this is the Max Version Number
+        if (config.version.version > versionMax)
+        {
+            versionMax = config.version.version;
+            configData.currentVersion = configVersionData;
+        }
+    }
+    responceMessage.data = configData;
+    return responceMessage;
+    }).catch(error => {
+        responceMessage.data = error;
+        responceMessage.error.status = true;
+        responceMessage.error.code = 1;
+        responceMessage.error.description = `Failed to get the configs for the device ${deviceId}` ;
+        // 403  Device Error or NO device
+        return responceMessage;
+    });
+    
     
 });
