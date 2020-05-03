@@ -33,7 +33,7 @@ const fs = require('fs');
 const {google} = require('googleapis');
 
 const iot = require('@google-cloud/iot');
-
+var backslash = require('backslash');
 
 // 
 /**
@@ -96,7 +96,7 @@ exports.addDevice = functions.https.onCall((data, context) => {
     // optional auth parameters.
     });
     var keytoUse = backslash(publicKeyFile);
-    var backslash = require('backslash');
+    
     const regPath = iotClient.registryPath(projectId, cloudRegion, registryId);
     const device = {
       id: deviceId,
