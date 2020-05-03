@@ -29,17 +29,10 @@ debug.isReady().then(() => {
 
 const functions = require('firebase-functions');
 'use strict';
+const fs = require('fs');
 const {google} = require('googleapis');
 
 const iot = require('@google-cloud/iot');
-
-
-
-const DeviceSettings = {
-  name: "John Doe",
-  age: 32,
-  title: "Vice President of JavaScript"
-};
 
 
 // 
@@ -61,6 +54,7 @@ error : {
 }
 }
 
+// Used to reset the responce Message.
 function resetMessage()
 {
     responceMessage = {
@@ -72,11 +66,67 @@ function resetMessage()
         }
     }
 }
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
 
-exports.addDevice = functions.https.onRequest((request, response) => {
- response.send("Hello from Firebase!");
+/**
+ * addDevice allows a user to add a device to a Regsistry.
+ * @param {!express:Request} data on Call data.
+ * @param data.projectId - This is teh project ID gotten from the home page of the project.
+ * @param data.cloudRegion - This is the region the project device is in gotten from the device reg.
+ * @param data.registryId - This is the device reg id.
+ * @param data.deviceId - This is the device id found in the required Reg.
+ * @param data.commandMessage - This is the devicecommand and is generally a JSON object.
+ * @param {!express:Response} return HTTP response context.
+ * @param return.responceMessage - This is the device responce to the command and is generally a JSON object.
+ * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
+ * @param responceMessage.status - This is status True = Error False = No Error.
+ * @param responceMessage.code - This is code assigned to the Error.
+ * @param responceMessage.description - This is description of the Error.
+ */
+exports.addDevice = functions.https.onCall((data, context) => {
+    resetMessage();
+    // Take the data from the request.
+    const projectId = data.projectId;
+    const cloudRegion = data.cloudRegion;
+    const registryId = data.registryId;
+    const deviceId = data.deviceId;
+    const publicKeyFormat = data.publicKeyFormat;
+    const publicKeyFile = data.publicKeyFile;
+    const iotClient = new iot.v1.DeviceManagerClient({
+    // optional auth parameters.
+    });
+    
+ 
+    const regPath = iotClient.registryPath(projectId, cloudRegion, registryId);
+    const device = {
+      id: deviceId,
+      credentials: [
+        {
+          publicKey: {
+            format: publicKeyFormat,
+            key: publicKeyFile,
+          },
+        },
+      ],
+    };
+  
+    const request = {
+      parent: regPath,
+      device,
+    };
+    return iotClient.createDevice(request).then(responses => {
+        const response = responses[0];
+        console.log('Created device', response);
+      } ).catch(error => {
+        responceMessage.data = error;
+        responceMessage.error.status = true;
+        responceMessage.error.code = 3;
+        responceMessage.error.description = `Failed to send a command to the device ${deviceId}` ;
+        // 403  Device Error or NO device.
+        return responceMessage;
+    });
+      
+    // Public key ec_public.pem
 });
 
 exports.deleteDevice = functions.https.onRequest((request, response) => {
@@ -87,13 +137,6 @@ exports.listDevices = functions.https.onRequest((request, response) => {
     response.send("Hello from Firebase!");
 });
 
-exports.sendCommand = functions.https.onCall((data, context) => {
-    console.log(data.name);
-    return {
-        message: `FAILED! Email sent to the user at email address` + data.to,
-        status: false
-      }
-});
 
 /**
  * sendCommand allows a user to send data to the selected device as a command.

@@ -133,6 +133,31 @@
 
       }
 
+      
+      // Test Sending a Config
+      // Test - addDevice('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEW','ec','ec_public.pem')
+      function addDevice(projectId, cloudRegion, registryId, deviceId ,publicKeyFormat,publicKeyFile)
+      {
+        var privateKey = '-----BEGIN\sPUBLIC\sKEY-----\r\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkiVcex5lBtf0j92hDkqBAWzgfDHY\r\nHQD5x5kldGwzgkDBep0OkANRNtHPxjR61zKBsnxA/irFy/SWrfbztQfyuA==\r\n-----END\sPUBLIC\sKEY-----';
+        const cf = functions.httpsCallable('addDevice');
+        var commandMessage = {
+          command: "Alive"
+        };
+        
+      
+        cf({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId, deviceId: deviceId ,publicKeyFormat: publicKeyFormat, publicKeyFile: privateKey})
+        .then(result => {
+
+          console.log("Done !!");
+          console.log(result.data);
+              
+          }).catch((error) =>{
+            
+            console.log(error);
+        });
+
+      }
+
     </script>
   </body>
 </html>
