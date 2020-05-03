@@ -174,6 +174,42 @@
 
       }
 
+      // Test - sendCommand('wifi-esp','europe-west1','MEMS-ESP-DEVICES')
+      function listDevices(projectId, cloudRegion, registryId )
+      {
+        const cf = functions.httpsCallable('listDevices');
+     
+        cf({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId })
+        .then(result => {
+
+          console.log("Done !!");
+          console.log(result.data);
+              
+          }).catch((error) =>{
+            
+            console.log(error);
+        });
+
+      }
+
+      // Test - getState('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEW')
+      function getState(projectId, cloudRegion, registryId , deviceId )
+      {
+        const cf = functions.httpsCallable('getState');
+     
+        cf({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId, deviceId: deviceId })
+        .then(result => {
+
+          console.log("Done !!");
+          console.log(result.data);
+              
+          }).catch((error) =>{
+            
+            console.log(error);
+        });
+
+      }
+
     </script>
   </body>
 </html>

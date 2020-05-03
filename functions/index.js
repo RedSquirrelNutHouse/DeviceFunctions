@@ -31,7 +31,6 @@ const functions = require('firebase-functions');
 'use strict';
 const fs = require('fs');
 const {google} = require('googleapis');
-
 const iot = require('@google-cloud/iot');
 var backslash = require('backslash');
 
@@ -189,8 +188,53 @@ exports.deleteDevice = functions.https.onCall((data, context) => {
     });
 
 });
-exports.listDevices = functions.https.onRequest((request, response) => {
-    response.send("Hello from Firebase!");
+
+
+
+/**
+ * listDevices allows a user to list the Devices in the regeistry.
+ * @param {!express:Request} data on Call data.
+ * @param data.projectId - This is teh project ID gotten from the home page of the project.
+ * @param data.cloudRegion - This is the region the project device is in gotten from the device reg.
+ * @param data.registryId - This is the device reg id.
+ * @param {!express:Response} return HTTP response context.
+ * @param return.responceMessage - This is the device responce to the command and is generally a JSON object.
+ * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
+ * @param responceMessage.status - This is status True = Error False = No Error.
+ * @param responceMessage.code - This is code assigned to the Error.
+ * @param responceMessage.description - This is description of the Error.
+ */
+exports.listDevices = functions.https.onCall((data, context) => {
+    
+    resetMessage();
+    // Take the data from the request.
+    const projectId = data.projectId;
+    const cloudRegion = data.cloudRegion;
+    const registryId = data.registryId;
+    const iotClient = new iot.v1.DeviceManagerClient({
+    // optional auth parameters.
+    });
+    const parentName = iotClient.registryPath(projectId, cloudRegion, registryId);
+    // the Request Object.
+    const request = {
+        parent: parentName
+    };
+  
+    return iotClient.listDevices(request).then(responses => {
+    // The responce.
+    const devices = responses[0];
+    responceMessage.data = devices;
+    return responceMessage;
+    }).catch(error => {
+        responceMessage.data = error;
+        responceMessage.error.status = true;
+        responceMessage.error.code = 6;
+        responceMessage.error.description = `Failed to get the list of the devices for ${registryId}` ;
+        // 403  Device Error or NO device.
+        return responceMessage;
+    });
+
 });
 
 
@@ -394,7 +438,145 @@ exports.getConfig = functions.https.onCall((data, context) => {
 
 });
 
-exports.getState = functions.https.onRequest((request, response) => {
-    response.send("Hello from Firebase!");
+/**
+ * sendCommand allows a user to send data to the selected device as a command.
+ * @param {!express:Request} data on Call data.
+ * @param data.projectId - This is teh project ID gotten from the home page of the project.
+ * @param data.cloudRegion - This is the region the project device is in gotten from the device reg.
+ * @param data.registryId - This is the device reg id.
+ * @param data.deviceId - This is the device id found in the required Reg.
+ * @param data.commandMessage - This is the devicecommand and is generally a JSON object.
+ * @param {!express:Response} return HTTP response context.
+ * @param return.responceMessage - This is the device responce to the command and is generally a JSON object.
+ * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
+ * @param responceMessage.status - This is status True = Error False = No Error.
+ * @param responceMessage.code - This is code assigned to the Error.
+ * @param responceMessage.description - This is description of the Error.
+ */
+exports.sendCommand = functions.https.onCall((data, context) => {
+    
+    resetMessage();
+    // Take the data from the request.
+    const projectId = data.projectId;
+    const cloudRegion = data.cloudRegion;
+    const registryId = data.registryId;
+    const deviceId = data.deviceId;
+    const commandMessage = data.commandMessage;
+    const iotClient = new iot.v1.DeviceManagerClient({
+    // optional auth parameters.
+    });
+
+    // Get the device path.
+    const devicePath = iotClient.devicePath(
+    projectId,
+    cloudRegion,
+    registryId,
+    deviceId
+    );
+
+    // Used to hold the ccommand.
+    const binaryData = Buffer.from(JSON.stringify(commandMessage)).toString('base64');
+    // the Request Object.
+    const request = {
+      name: devicePath,
+      binaryData: binaryData,
+    };
+  
+    return iotClient.sendCommandToDevice(request).then(responses => {
+    // The responce.
+    const responce = responses[0];
+    responceMessage.data = responce;
+    return responceMessage;
+    }).catch(error => {
+        responceMessage.data = error;
+        responceMessage.error.status = true;
+        responceMessage.error.code = 3;
+        responceMessage.error.description = `Failed to send a command to the device ${deviceId}` ;
+        // 403  Device Error or NO device.
+        return responceMessage;
+    });
+
 });
+
+
+/**
+ * getState allows a user get the state of the device.
+ * @param {!express:Request} data on Call data.
+ * @param data.projectId - This is teh project ID gotten from the home page of the project.
+ * @param data.cloudRegion - This is the region the project device is in gotten from the device reg.
+ * @param data.registryId - This is the device reg id.
+ * @param data.deviceId - This is the device id found in the required Reg.
+ * @param {!express:Response} return HTTP response context.
+ * @param return.responceMessage - This is the device responce to the command and is generally a JSON object.
+ * @param responceMessage.data.lastState - This is the last state of the device.
+ * @param responceMessage.data.allStates[] - This is the array of states the last 10.
+ * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
+ * @param responceMessage.status - This is status True = Error False = No Error.
+ * @param responceMessage.code - This is code assigned to the Error.
+ * @param responceMessage.description - This is description of the Error.
+ */
+exports.getState = functions.https.onCall((data, context) => {
+    
+    resetMessage();
+    // Take the data from the request.
+    const projectId = data.projectId;
+    const cloudRegion = data.cloudRegion;
+    const registryId = data.registryId;
+    const deviceId = data.deviceId;
+    const iotClient = new iot.v1.DeviceManagerClient({
+    // optional auth parameters.
+    });
+
+    // Get the device path.
+    const devicePath = iotClient.devicePath(
+    projectId,
+    cloudRegion,
+    registryId,
+    deviceId
+    );
+
+    // the Request Object.
+    const request = {
+      name: devicePath
+    };
+  
+    return iotClient.listDeviceStates(request).then(responses => {
+    // The responce.
+    var DeviceStates = {
+        lastState : null,
+        allStates : []
+    };
+    const states = responses[0].deviceStates;
+    var lastUpdateTime = 0;
+    for (let i = 0; i < states.length; i++) {
+        var deviceData = {
+            updateTime: null,
+            Data: null
+        };
+        const state = states[i];
+        deviceData.updateTime = state.updateTime;
+        var milliseconds = Number(deviceData.updateTime.seconds)*1000;
+        deviceData.Data = state.binaryData.toString('utf8');
+        DeviceStates.allStates.push(deviceData);  
+        // Calculate the last time that the device update
+        if (milliseconds > lastUpdateTime)
+        {
+            DeviceStates.lastState = deviceData;
+        }
+    }
+    responceMessage.data = DeviceStates;
+    return responceMessage;
+    }).catch(error => {
+        responceMessage.data = error;
+        responceMessage.error.status = true;
+        responceMessage.error.code = 3;
+        responceMessage.error.description = `Failed to read the state of the device ${deviceId}` ;
+        // 403  Device Error or NO device.
+        return responceMessage;
+    });
+
+});
+
 
