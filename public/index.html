@@ -128,6 +128,27 @@
 
       }
 
+                  // Test Sending a Config
+      // Test - sendCommand('wifi-esp','europe-west1','MEMS-ESP-DEVICES','D1_NEW')
+      function sendCommand(projectId, cloudRegion, registryId, deviceId )
+      {
+        const cf = functions.httpsCallable('sendCommand');
+        var commandMessage = {
+          command: "Alive"
+        };
+        cf({  projectId: projectId, cloudRegion: cloudRegion, registryId: registryId, deviceId: deviceId ,commandMessage: commandMessage})
+        .then(result => {
+
+          console.log("Done !!");
+          console.log(result.data);
+              
+          }).catch((error) =>{
+            
+            console.log(error);
+        });
+
+      }
+
     </script>
   </body>
 </html>

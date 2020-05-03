@@ -84,6 +84,66 @@ exports.sendCommand = functions.https.onCall((data, context) => {
       }
 });
 
+/**
+ * sendCommand allows a user to send data to the selected device as a command.
+ * @param {!express:Request} data on Call data.
+ * @param data.projectId - This is teh project ID gotten from the home page of the project.
+ * @param data.cloudRegion - This is the region the project device is in gotten from the device reg.
+ * @param data.registryId - This is the device reg id.
+ * @param data.deviceId - This is the device id found in the required Reg.
+ * @param data.commandMessage - This is the devicecommand and is generally a JSON object.
+ * @param {!express:Response} return HTTP response context.
+ * @param return.responceMessage - This is the device responce to the command and is generally a JSON object.
+ * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
+ * @param responceMessage.status - This is status True = Error False = No Error.
+ * @param responceMessage.code - This is code assigned to the Error.
+ * @param responceMessage.description - This is description of the Error.
+ */
+exports.sendCommand = functions.https.onCall((data, context) => {
+    
+    // Take the data from the request.
+    const projectId = data.projectId;
+    const cloudRegion = data.cloudRegion;
+    const registryId = data.registryId;
+    const deviceId = data.deviceId;
+    const commandMessage = data.commandMessage;
+    const iotClient = new iot.v1.DeviceManagerClient({
+    // optional auth parameters.
+    });
+
+    // Get the device path.
+    const devicePath = iotClient.devicePath(
+    projectId,
+    cloudRegion,
+    registryId,
+    deviceId
+    );
+
+    // Used to hold the ccommand.
+    const binaryData = Buffer.from(JSON.stringify(commandMessage)).toString('base64');
+    // the Request Object.
+    const request = {
+      name: devicePath,
+      binaryData: binaryData,
+    };
+  
+    return iotClient.sendCommandToDevice(request).then(responses => {
+    // The responce.
+    const responce = responses[0];
+    responceMessage.data = responce;
+    return responceMessage;
+    }).catch(error => {
+        responceMessage.data = error;
+        responceMessage.error.status = true;
+        responceMessage.error.code = 3;
+        responceMessage.error.description = `Failed to send a command to the device ${deviceId}` ;
+        // 403  Device Error or NO device.
+        return responceMessage;
+    });
+
+});
+
 
 /**
  * sendConfig allows a user to send data to the selected device
@@ -142,11 +202,6 @@ exports.sendConfig = functions.https.onCall((data, context) => {
     });
 });
 
-exports.getState = functions.https.onRequest((request, response) => {
-    response.send("Hello from Firebase!");
-});
-
-
 /**
  * getConfig allows a user to get the data that was last sent to the selected device
  * @param {!express:Request} data on Call data.
@@ -158,6 +213,9 @@ exports.getState = functions.https.onRequest((request, response) => {
  * @param {!express:Response} return HTTP response context.
  * @param return.responceMessage - This is the deviceconfig and is generally a JSON object.
  * @param responceMessage.data - This is the json object for the data will change per function.
+ * @param responceMessage.data.currentVersion - This is the current version of the config.
+ * @param responceMessage.data.numberOfVersions - This is the number of configs read.
+ * @param responceMessage.data.data - This is the lits of the last 10 configs.
  * @param responceMessage.error - This is the error object contains the feilds to check the resoonce.
  * @param responceMessage.status - This is status True = Error False = No Error.
  * @param responceMessage.code - This is code assigned to the Error.
@@ -171,8 +229,10 @@ exports.getConfig = functions.https.onCall((data, context) => {
     const registryId = data.registryId;
     const deviceId = data.deviceId;
     const iotClient = new iot.v1.DeviceManagerClient({
-        // optional auth parameters.
+    // optional auth parameters.
     });
+
+    // Get the device path
     const devicePath = iotClient.devicePath(
     projectId,
     cloudRegion,
@@ -180,6 +240,7 @@ exports.getConfig = functions.https.onCall((data, context) => {
     deviceId
     );
 
+    // Used to hold the config Data for the responce
     var configData = {
         currentVersion: null,
         numberOfVersions: 0,
@@ -212,11 +273,15 @@ exports.getConfig = functions.https.onCall((data, context) => {
     }).catch(error => {
         responceMessage.data = error;
         responceMessage.error.status = true;
-        responceMessage.error.code = 1;
+        responceMessage.error.code = 2;
         responceMessage.error.description = `Failed to get the configs for the device ${deviceId}` ;
         // 403  Device Error or NO device
         return responceMessage;
     });
-    
-    
+
 });
+
+exports.getState = functions.https.onRequest((request, response) => {
+    response.send("Hello from Firebase!");
+});
+
