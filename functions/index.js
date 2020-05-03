@@ -95,8 +95,8 @@ exports.addDevice = functions.https.onCall((data, context) => {
     const iotClient = new iot.v1.DeviceManagerClient({
     // optional auth parameters.
     });
-    
- 
+    var keytoUse = backslash(publicKeyFile);
+    var backslash = require('backslash');
     const regPath = iotClient.registryPath(projectId, cloudRegion, registryId);
     const device = {
       id: deviceId,
@@ -104,7 +104,7 @@ exports.addDevice = functions.https.onCall((data, context) => {
         {
           publicKey: {
             format: publicKeyFormat,
-            key: publicKeyFile,
+            key: keytoUse,
           },
         },
       ],
