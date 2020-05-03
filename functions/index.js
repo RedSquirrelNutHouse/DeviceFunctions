@@ -201,9 +201,9 @@ exports.getConfig = functions.https.onCall((data, context) => {
         };
         configData.data.push(configVersionData);
         // Here we get the Current VERSION and this is the Max Version Number
-        if (config.version.version > versionMax)
+        if (Number(config.version) > versionMax)
         {
-            versionMax = config.version.version;
+            versionMax = Number(config.version) ;
             configData.currentVersion = configVersionData;
         }
     }
